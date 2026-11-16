@@ -1,14 +1,17 @@
+
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Inventra - Smart Inventory and Reorder Management System",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
@@ -16,3 +19,4 @@
     "mongoose": "^9.11.2"
   }
 }
+

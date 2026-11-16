@@ -18,7 +18,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/products", salesRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/orders", orderRoutes);
-const PORT=5000;
+const PORT = process.env.PORT || 5000;
 
 // Sample products for learning
 const products = [
