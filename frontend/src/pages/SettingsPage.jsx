@@ -135,28 +135,6 @@ function SettingsPage({
           </div>
         </div>
 
-        <div className="settings-card">
-          <h2>Inventory Preferences</h2>
-          <p>Set your low-stock notification threshold.</p>
-          <div className="settings-field">
-            <label htmlFor="lowStockThreshold">Low Stock Threshold</label>
-            <input
-              id="lowStockThreshold"
-              type="number"
-              name="lowStockThreshold"
-              min="0"
-              step="1"
-              value={settings.lowStockThreshold}
-              onChange={handleSettingsChange}
-              required
-            />
-            <small>
-              Products with stock at or below this quantity should be considered
-              low stock.
-            </small>
-          </div>
-        </div>
-
         <div className="settings-actions">
           <button type="submit" className="save-settings-btn">
             Save Changes

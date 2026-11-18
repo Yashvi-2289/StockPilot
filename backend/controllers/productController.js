@@ -1,9 +1,11 @@
 const Product = require("../models/product.js");
+const { refreshAverageDailySales } = require("../utils/salesUtils");
 
 // GET all products
 const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find();
+        await refreshAverageDailySales(products);
 
         res.status(200).json(products);
     } catch (error) {
@@ -27,6 +29,8 @@ const getProductById = async (req, res) => {
             });
         }
 
+        await refreshAverageDailySales([product]);
+
         res.status(200).json(product);
     } catch (error) {
         if (error.name === "CastError") {
@@ -49,7 +53,6 @@ const createProduct = async (req, res) => {
             name,
             stock,
             price,
-            averageDailySales,
             leadTimeDays,
             safetyStock
         } = req.body;
@@ -58,7 +61,6 @@ const createProduct = async (req, res) => {
             name,
             stock,
             price,
-            averageDailySales,
             leadTimeDays,
             safetyStock
         });
@@ -87,9 +89,12 @@ const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
 
+        const updates = { ...req.body };
+        delete updates.averageDailySales;
+
         const product = await Product.findByIdAndUpdate(
             id,
-            req.body,
+            updates,
             {
                 returnDocument: "after",
                 runValidators: true
