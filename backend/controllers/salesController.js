@@ -1,4 +1,10 @@
 const Product = require("../models/product.js");
+const Sale = require("../models/Sale.js");
+const mongoose = require("mongoose");
+const {
+    calculateAverageDailySales,
+    getSalesTotalsByProduct
+} = require("../utils/salesUtils");
 
 // RECORD SALE
 const recordSale = async (req, res) => {
@@ -13,32 +19,64 @@ const recordSale = async (req, res) => {
             });
         }
 
-        // Find product
-        const product = await Product.findById(id);
+        let session;
+        let product;
 
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found"
+        try {
+            session = await mongoose.startSession();
+            await session.withTransaction(async () => {
+                product = await Product.findById(id).session(session);
+
+                if (!product) {
+                    const error = new Error("Product not found");
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                if (product.stock < quantity) {
+                    const error = new Error("Insufficient stock");
+                    error.statusCode = 400;
+                    error.availableStock = product.stock;
+                    throw error;
+                }
+
+                product.stock -= quantity;
+                await Sale.create(
+                    [{ productId: product._id, quantity }],
+                    { session }
+                );
+
+                const totalsByProduct = await getSalesTotalsByProduct(
+                    [product._id],
+                    session
+                );
+                const totals = totalsByProduct.get(String(product._id));
+                product.averageDailySales = calculateAverageDailySales(
+                    totals.totalQuantity,
+                    totals.firstSaleDate
+                );
+                await product.save({ session });
             });
+        } finally {
+            if (session) {
+                await session.endSession();
+            }
         }
-
-        // Check available stock
-        if (product.stock < quantity) {
-            return res.status(400).json({
-                message: "Insufficient stock",
-                availableStock: product.stock
-            });
-        }
-
-        // Reduce stock
-        product.stock -= quantity;
-        await product.save();
 
         res.status(200).json({
             message: "Sale recorded successfully",
             product
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                message: error.message,
+                ...(error.availableStock === undefined
+                    ? {}
+                    : { availableStock: error.availableStock })
+            });
+        }
+
         if (error.name === "CastError") {
             return res.status(400).json({
                 message: "Invalid product ID"

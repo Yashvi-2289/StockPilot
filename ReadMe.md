@@ -13,9 +13,9 @@ A web-based inventory management application designed to help businesses manage 
 - **Dashboard:** View inventory summaries and important stock information.
 - **Product Management:** Add, edit, view, and delete products.
 - **Stock Tracking:** Monitor available product quantities.
-- **Low Stock Alerts:** Identify products that need restocking.
+- **Low Stock Alerts:** Identify products at or below their calculated reorder points.
 - **Inventory Insights:** Calculate estimated days remaining, reorder points, and suggested order quantities.
-- **Sales Management:** Record product sales and automatically update stock quantities.
+- **Sales Management:** Record product sales, automatically update stock, and track average daily sales from recorded sale history.
 - **Orders Management:** Manage inventory-related orders.
 - **Settings:** Access application settings.
 - **Responsive Design:** Use the application across desktop and mobile devices.

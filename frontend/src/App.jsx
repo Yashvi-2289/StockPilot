@@ -16,7 +16,6 @@ const defaultSettings = {
   adminName: "Administrator",
   email: "admin@stockpilot.com",
   currency: "INR",
-  lowStockThreshold: 10,
 };
 
 const currencyFormats = {
@@ -39,17 +38,13 @@ function readSavedSettings() {
     }
 
     const parsedSettings = JSON.parse(savedSettings);
-    const savedThreshold = Number(parsedSettings.lowStockThreshold);
+    delete parsedSettings.lowStockThreshold;
     return {
       ...defaultSettings,
       ...parsedSettings,
       currency: currencyFormats[parsedSettings.currency]
         ? parsedSettings.currency
         : defaultSettings.currency,
-      lowStockThreshold:
-        Number.isInteger(savedThreshold) && savedThreshold >= 0
-          ? savedThreshold
-          : defaultSettings.lowStockThreshold,
     };
   } catch (error) {
     console.error("Could not load saved settings:", error);
@@ -89,7 +84,6 @@ function App() {
     name: "",
     stock: "",
     price: "",
-    averageDailySales: "0",
     leadTimeDays: "0",
     safetyStock: "0",
   });
@@ -99,7 +93,6 @@ const [editData, setEditData] = useState({
   name: "",
   stock: "",
   price: "",
-  averageDailySales: "0",
   leadTimeDays: "0",
   safetyStock: "0",
 });
@@ -200,7 +193,6 @@ useEffect(() => {
 
   const totalProducts = products.length;
   const totalUnits = products.reduce((sum, p) => sum + p.stock, 0);
-  const lowStockThreshold = Number(settings.lowStockThreshold);
   const currencyLocale = currencyFormats[settings.currency] || currencyFormats.INR;
   const currencySymbol = currencySymbols[settings.currency] || currencySymbols.INR;
   const exchangeRate = exchangeRates[settings.currency];
@@ -218,9 +210,7 @@ useEffect(() => {
     Number.isFinite(amount) && Number.isFinite(exchangeRate)
       ? amount / exchangeRate
       : null;
-  const lowStock = products.filter(
-    (product) => product.stock <= lowStockThreshold
-  ).length;
+  const lowStock = inventorySummary.filter((item) => item.lowStock).length;
   const inventoryValue = products.reduce(
     (sum, p) => sum + p.stock * p.price,
     0,
@@ -257,7 +247,6 @@ async function handleAddProduct(event) {
       name: formData.name.trim(),
       stock: Number(formData.stock),
       price: basePrice,
-      averageDailySales: Number(formData.averageDailySales),
       leadTimeDays: Number(formData.leadTimeDays),
       safetyStock: Number(formData.safetyStock),
     };
@@ -278,7 +267,6 @@ alert("Product recorded successfully!");
       name: "",
       stock: "",
       price: "",
-      averageDailySales: "0",
       leadTimeDays: "0",
       safetyStock: "0",
     });
@@ -319,7 +307,6 @@ function startEditing(product) {
     name: product.name,
     stock: String(product.stock),
     price: String((product.price * exchangeRate).toFixed(2)),
-    averageDailySales: String(product.averageDailySales ?? 0),
     leadTimeDays: String(product.leadTimeDays ?? 0),
     safetyStock: String(product.safetyStock ?? 0),
   });
@@ -355,7 +342,6 @@ await api.put(`/products/${editingProduct._id}`, {
   name: editData.name.trim(),
   stock: Number(editData.stock),
   price: basePrice,
-  averageDailySales: Number(editData.averageDailySales),
   leadTimeDays: Number(editData.leadTimeDays),
   safetyStock: Number(editData.safetyStock),
 }
@@ -576,7 +562,7 @@ function resetSettings() {
           <article className="stat-card">
             <p>Low Stock Items</p>
             <h2>{loading ? "—" : lowStock}</h2>
-            <span>Products with stock at or below {lowStockThreshold} units</span>
+            <span>Products at or below their reorder point</span>
           </article>
 
           <article className="stat-card">
@@ -658,19 +644,6 @@ function resetSettings() {
         />
       </label>
       
-<label>
-  Average Daily Sales
-  <input
-    name="averageDailySales"
-    type="number"
-    min="0"
-    step="0.1"
-    value={editData.averageDailySales}
-    onChange={handleEditChange}
-    required
-  />
-</label>
-
 <label>
   Lead Time (days)
   <input
@@ -794,17 +767,6 @@ function resetSettings() {
       </label>
 
       <label>
-        Average Daily Sales
-        <input
-          name="averageDailySales"
-          type="number"
-          min="0"
-          value={formData.averageDailySales}
-          onChange={handleInputChange}
-        />
-      </label>
-
-      <label>
         Lead Time (days)
         <input
           name="leadTimeDays"
@@ -849,6 +811,7 @@ function resetSettings() {
       (item) => String(item.id) === String(product._id)
     );
     const suggestedOrder = Math.ceil(insight?.suggestedOrder ?? 0);
+    const isLowStock = Boolean(insight?.lowStock);
 
     return (
       <div className="product-card" key={product._id}>
@@ -861,11 +824,9 @@ function resetSettings() {
           </div>
 
           <span
-            className={`stock-badge ${
-              product.stock <= lowStockThreshold ? "low" : "healthy"
-            }`}
+            className={`stock-badge ${isLowStock ? "low" : "healthy"}`}
           >
-            {product.stock <= lowStockThreshold ? "Low stock" : "In stock"}
+            {isLowStock ? "Low stock" : "In stock"}
           </span>
         </div>
 
@@ -878,6 +839,13 @@ function resetSettings() {
           <div>
             <span>Available Stock</span>
             <strong>{product.stock ?? 0} units</strong>
+          </div>
+
+          <div>
+            <span>Average Daily Sales</span>
+            <strong>
+              {(insight?.averageDailySales ?? 0).toFixed(2)} units/day
+            </strong>
           </div>
 
           <div>

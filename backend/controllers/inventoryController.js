@@ -1,4 +1,5 @@
 const Product = require("../models/product.js");
+const { refreshAverageDailySales } = require("../utils/salesUtils");
 
 const {
     calculateDaysRemaining,
@@ -10,6 +11,7 @@ const {
 const getInventorySummary = async (req, res) => {
     try {
         const products = await Product.find();
+        await refreshAverageDailySales(products);
 
         const summary = products.map((product) => {
             const reorderPoint = calculateReorderPoint(
