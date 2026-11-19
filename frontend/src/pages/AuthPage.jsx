@@ -8,6 +8,7 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [errorDetail, setErrorDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
@@ -15,6 +16,7 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
     onClearNotice();
     setSubmitting(true);
     setError("");
+    setErrorDetail("");
 
     try {
       const response = await api.post(
@@ -28,6 +30,10 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
     } catch (requestError) {
       const status = requestError.response?.status;
       const backendMessage = requestError.response?.data?.message;
+      const backendDetail = requestError.response?.data?.error;
+      setErrorDetail(
+        typeof backendDetail === "string" ? backendDetail : ""
+      );
 
       if (status === 404) {
         setError(
@@ -49,7 +55,12 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
 
   function changeMode(nextMode) {
     setMode(nextMode);
+    setStoreName("");
+    setAdminName("");
+    setEmail("");
+    setPassword("");
     setError("");
+    setErrorDetail("");
   }
 
   return (
@@ -134,6 +145,12 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
           )}
           {notice && <p className="error-message" role="alert">{notice}</p>}
           {error && <p className="error-message" role="alert">{error}</p>}
+          {errorDetail && (
+            <details className="auth-error-details">
+              <summary>Technical details</summary>
+              <code>{errorDetail}</code>
+            </details>
+          )}
           <button className="auth-submit" type="submit" disabled={submitting}>
             {submitting
               ? "Please wait..."
