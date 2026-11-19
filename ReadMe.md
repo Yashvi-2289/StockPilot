@@ -128,6 +128,8 @@ New store accounts start with an empty inventory. The first account created afte
 
 Store account passwords are stored as salted password hashes. Sign-in sessions expire after seven days and are stored as hashes in MongoDB.
 
+To change a password, sign in, open **Settings**, and submit the current password and a new password of 8 to 128 characters. Changing the password signs out other devices; the device used to change it stays signed in.
+
 ## 🔗 API Configuration
 
 The frontend communicates with the backend through Axios.

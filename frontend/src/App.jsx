@@ -603,6 +603,11 @@ async function saveSettings() {
   );
 }
 
+async function changePassword(passwords) {
+  const response = await api.put("/auth/password", passwords);
+  return response.data;
+}
+
 function resetSettings() {
   const reset = {
     ...defaultSettings,
@@ -651,6 +656,7 @@ if (!authUser) {
   return (
     <AuthPage
       onAuthenticated={handleAuthenticated}
+      onClearNotice={() => setAuthNotice("")}
       notice={authNotice}
     />
   );
@@ -1187,6 +1193,7 @@ if (!authUser) {
             settings={settings}
             onSettingsChange={handleSettingsChange}
             onSave={saveSettings}
+            onChangePassword={changePassword}
             onReset={resetSettings}
             onRetryExchangeRates={() => setExchangeRateRetry((retry) => retry + 1)}
             exchangeRate={exchangeRate}

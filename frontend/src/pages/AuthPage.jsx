@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api from "../services/api";
 
-function AuthPage({ onAuthenticated, notice }) {
+function AuthPage({ onAuthenticated, onClearNotice, notice }) {
   const [mode, setMode] = useState("login");
   const [storeName, setStoreName] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -12,6 +12,7 @@ function AuthPage({ onAuthenticated, notice }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    onClearNotice();
     setSubmitting(true);
     setError("");
 

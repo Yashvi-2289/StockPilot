@@ -186,6 +186,58 @@ const updateProfile = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    const body = req.body || {};
+    const { currentPassword, newPassword } = body;
+
+    if (
+        typeof currentPassword !== "string" ||
+        !currentPassword ||
+        currentPassword.length > 128 ||
+        typeof newPassword !== "string" ||
+        newPassword.length < 8 ||
+        newPassword.length > 128
+    ) {
+        return res.status(400).json({
+            message: "Enter your current password and a new password of 8 to 128 characters."
+        });
+    }
+
+    if (currentPassword === newPassword) {
+        return res.status(400).json({
+            message: "Your new password must be different from your current password."
+        });
+    }
+
+    try {
+        const store = await Store.findById(req.storeId).select("+passwordHash");
+        if (!store || !(await verifyPassword(currentPassword, store.passwordHash))) {
+            return res.status(400).json({
+                message: "Current password is incorrect."
+            });
+        }
+
+        const passwordHash = await hashPassword(newPassword);
+        await Store.updateOne(
+            { _id: req.storeId },
+            { $set: { passwordHash } }
+        );
+        await Session.deleteMany({
+            storeId: req.storeId,
+            _id: { $ne: req.sessionId }
+        });
+
+        res.status(200).json({
+            message: "Password changed successfully. Other devices have been signed out."
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Could not change your password",
+            error: error.message
+        });
+    }
+};
+
 const logout = async (req, res) => {
     try {
         await Session.deleteOne({ _id: req.sessionId });
@@ -198,4 +250,11 @@ const logout = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getCurrentStore, updateProfile, logout };
+module.exports = {
+    register,
+    login,
+    getCurrentStore,
+    updateProfile,
+    changePassword,
+    logout
+};

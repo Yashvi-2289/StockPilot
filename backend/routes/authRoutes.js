@@ -5,6 +5,7 @@ const {
     login,
     getCurrentStore,
     updateProfile,
+    changePassword,
     logout
 } = require("../controllers/authController");
 
@@ -14,6 +15,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.get("/me", requireStore, getCurrentStore);
 router.put("/profile", requireStore, updateProfile);
+router.put("/password", requireStore, changePassword);
 router.post("/logout", requireStore, logout);
 
 module.exports = router;
