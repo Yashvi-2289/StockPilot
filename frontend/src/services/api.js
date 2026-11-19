@@ -1,8 +1,14 @@
 
 import axios from "axios";
 
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://stockpilot-backend-l6ns.onrender.com/api");
+
 const api = axios.create({
-  baseURL: "https://stockpilot-backend-l6ns.onrender.com/api",
+  baseURL,
   headers: {
     "Content-Type": "application/json"
   },
