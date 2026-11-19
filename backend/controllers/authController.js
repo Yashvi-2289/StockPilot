@@ -109,6 +109,7 @@ const register = async (req, res) => {
             return res.status(409).json({ message: "An account with this email already exists." });
         }
 
+        console.error("Store account registration failed:", error);
         res.status(500).json({
             message: "Could not create your store account",
             error: error.message

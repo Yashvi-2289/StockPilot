@@ -326,9 +326,14 @@ td {
     margin: 0 0 18px;
   }
 
-  .sidebar-label,
-  .sidebar-footer {
+  .sidebar-label {
     display: none;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    margin-top: 16px;
+    padding-bottom: 0;
   }
 
   .sidebar nav {
@@ -877,6 +882,24 @@ td {
 .auth-hint {
   margin-top: -10px;
   color: #758197;
+}
+
+.auth-error-details {
+  margin-top: -8px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.auth-error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-error-details code {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .auth-submit {
