@@ -10,8 +10,8 @@ const {
 // GET inventory summary
 const getInventorySummary = async (req, res) => {
     try {
-        const products = await Product.find();
-        await refreshAverageDailySales(products);
+        const products = await Product.find({ storeId: req.storeId });
+        await refreshAverageDailySales(products, req.storeId);
 
         const summary = products.map((product) => {
             const reorderPoint = calculateReorderPoint(

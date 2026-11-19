@@ -25,7 +25,10 @@ const recordSale = async (req, res) => {
         try {
             session = await mongoose.startSession();
             await session.withTransaction(async () => {
-                product = await Product.findById(id).session(session);
+                product = await Product.findOne({
+                    _id: id,
+                    storeId: req.storeId
+                }).session(session);
 
                 if (!product) {
                     const error = new Error("Product not found");
@@ -42,13 +45,18 @@ const recordSale = async (req, res) => {
 
                 product.stock -= quantity;
                 await Sale.create(
-                    [{ productId: product._id, quantity }],
+                    [{
+                        storeId: req.storeId,
+                        productId: product._id,
+                        quantity
+                    }],
                     { session }
                 );
 
                 const totalsByProduct = await getSalesTotalsByProduct(
                     [product._id],
-                    session
+                    session,
+                    req.storeId
                 );
                 const totals = totalsByProduct.get(String(product._id));
                 product.averageDailySales = calculateAverageDailySales(

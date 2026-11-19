@@ -32,13 +32,13 @@ function calculateAverageDailySales(totalQuantity, firstSaleDate, today = new Da
     return totalQuantity / daysSinceFirstSale;
 }
 
-async function getSalesTotalsByProduct(productIds, session) {
+async function getSalesTotalsByProduct(productIds, session, storeId) {
     if (productIds.length === 0) {
         return new Map();
     }
 
     let aggregation = Sale.aggregate([
-        { $match: { productId: { $in: productIds } } },
+        { $match: { productId: { $in: productIds }, storeId } },
         {
             $group: {
                 _id: "$productId",
@@ -64,13 +64,15 @@ async function getSalesTotalsByProduct(productIds, session) {
     );
 }
 
-async function refreshAverageDailySales(products, today = new Date()) {
+async function refreshAverageDailySales(products, storeId, today = new Date()) {
     if (products.length === 0) {
         return;
     }
 
     const totalsByProduct = await getSalesTotalsByProduct(
-        products.map((product) => product._id)
+        products.map((product) => product._id),
+        undefined,
+        storeId
     );
     const updates = [];
 
@@ -87,7 +89,7 @@ async function refreshAverageDailySales(products, today = new Date()) {
         if (product.averageDailySales !== averageDailySales) {
             updates.push({
                 updateOne: {
-                    filter: { _id: product._id },
+                    filter: { _id: product._id, storeId },
                     update: { $set: { averageDailySales } }
                 }
             });

@@ -17,6 +17,7 @@ A web-based inventory management application designed to help businesses manage 
 - **Inventory Insights:** Calculate estimated days remaining, reorder points, and suggested order quantities.
 - **Sales Management:** Record product sales, automatically update stock, and track average daily sales from recorded sale history.
 - **Orders Management:** Manage inventory-related orders.
+- **Store Accounts:** Create an account for each store and sign in from any device. Products, sales, and orders are kept separate for each store.
 - **Settings:** Access application settings.
 - **Responsive Design:** Use the application across desktop and mobile devices.
 
@@ -116,6 +117,16 @@ The frontend will run on the local Vite development URL, usually:
 ```text
 http://localhost:5173
 ```
+
+## 🏪 Store Accounts
+
+1. Open StockPilot and choose **Create account**.
+2. Enter the store name, your name, an email address, and a password of at least 8 characters.
+3. Use that account to sign in on the other devices used by the same store. Each store should create its own account.
+
+New store accounts start with an empty inventory. The first account created after this update will receive the existing unassigned products, sales, and orders in the database; later accounts will not see that data. Keep the account email and password available to the store team.
+
+Store account passwords are stored as salted password hashes. Sign-in sessions expire after seven days and are stored as hashes in MongoDB.
 
 ## 🔗 API Configuration
 
