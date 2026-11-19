@@ -55,6 +55,10 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
 
   function changeMode(nextMode) {
     setMode(nextMode);
+    setStoreName("");
+    setAdminName("");
+    setEmail("");
+    setPassword("");
     setError("");
     setErrorDetail("");
   }

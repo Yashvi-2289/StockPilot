@@ -695,6 +695,13 @@ if (!authUser) {
           >
             <Settings size={19} /> Settings
           </a>
+          <button
+            type="button"
+            className="nav-link mobile-logout"
+            onClick={handleLogout}
+          >
+            <LogOut size={19} /> Sign out
+          </button>
         </nav>
 
         <div className="sidebar-footer">
