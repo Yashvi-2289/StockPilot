@@ -3,7 +3,10 @@ const Product = require("../models/product");
 
 const getOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ status: "Pending" })
+        const orders = await Order.find({
+            status: "Pending",
+            storeId: req.storeId
+        })
             .sort({ createdAt: -1 });
         res.status(200).json(orders);
     } catch (error) {
@@ -20,13 +23,16 @@ const restockOrder = async (req, res) => {
 
     try {
         order = await Order.findOneAndUpdate(
-            { _id: req.params.id, status: "Pending" },
+            { _id: req.params.id, status: "Pending", storeId: req.storeId },
             { $set: { status: "Restocking" } },
             { new: true }
         );
 
         if (!order) {
-            const existingOrder = await Order.findById(req.params.id);
+            const existingOrder = await Order.findOne({
+                _id: req.params.id,
+                storeId: req.storeId
+            });
             if (!existingOrder) {
                 return res.status(404).json({ message: "Order not found" });
             }
@@ -39,15 +45,15 @@ const restockOrder = async (req, res) => {
             });
         }
 
-        const product = await Product.findByIdAndUpdate(
-            order.productId,
+        const product = await Product.findOneAndUpdate(
+            { _id: order.productId, storeId: req.storeId },
             { $inc: { stock: order.quantity } },
             { returnDocument: "after", runValidators: true }
         );
 
         if (!product) {
             await Order.updateOne(
-                { _id: order._id, status: "Restocking" },
+                { _id: order._id, status: "Restocking", storeId: req.storeId },
                 { $set: { status: "Pending" } }
             );
             return res.status(404).json({ message: "Product not found" });
@@ -55,7 +61,7 @@ const restockOrder = async (req, res) => {
         stockIncremented = true;
 
         const receivedOrder = await Order.findOneAndUpdate(
-            { _id: order._id, status: "Restocking" },
+            { _id: order._id, status: "Restocking", storeId: req.storeId },
             { $set: { status: "Received" } },
             { new: true }
         );
@@ -74,7 +80,7 @@ const restockOrder = async (req, res) => {
         if (stockIncremented && order) {
             try {
                 const rollback = await Product.updateOne(
-                    { _id: order.productId },
+                    { _id: order.productId, storeId: req.storeId },
                     { $inc: { stock: -order.quantity } }
                 );
 
@@ -93,7 +99,7 @@ const restockOrder = async (req, res) => {
         if (order) {
             try {
                 await Order.updateOne(
-                    { _id: order._id, status: "Restocking" },
+                    { _id: order._id, status: "Restocking", storeId: req.storeId },
                     { $set: { status: "Pending" } }
                 );
             } catch (resetError) {
@@ -126,12 +132,16 @@ const createOrder = async (req, res) => {
             });
         }
 
-        const product = await Product.findById(productId);
+        const product = await Product.findOne({
+            _id: productId,
+            storeId: req.storeId
+        });
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
         const order = await Order.create({
+            storeId: req.storeId,
             productId: product._id,
             productName: product.name,
             quantity,

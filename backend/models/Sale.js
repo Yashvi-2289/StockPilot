@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const saleSchema = new mongoose.Schema(
     {
+        storeId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Store",
+            index: true
+        },
         productId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Product",

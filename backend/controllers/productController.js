@@ -4,8 +4,8 @@ const { refreshAverageDailySales } = require("../utils/salesUtils");
 // GET all products
 const getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find();
-        await refreshAverageDailySales(products);
+        const products = await Product.find({ storeId: req.storeId });
+        await refreshAverageDailySales(products, req.storeId);
 
         res.status(200).json(products);
     } catch (error) {
@@ -21,7 +21,7 @@ const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const product = await Product.findById(id);
+        const product = await Product.findOne({ _id: id, storeId: req.storeId });
 
         if (!product) {
             return res.status(404).json({
@@ -29,7 +29,7 @@ const getProductById = async (req, res) => {
             });
         }
 
-        await refreshAverageDailySales([product]);
+        await refreshAverageDailySales([product], req.storeId);
 
         res.status(200).json(product);
     } catch (error) {
@@ -62,7 +62,8 @@ const createProduct = async (req, res) => {
             stock,
             price,
             leadTimeDays,
-            safetyStock
+            safetyStock,
+            storeId: req.storeId
         });
 
         res.status(201).json({
@@ -91,9 +92,11 @@ const updateProduct = async (req, res) => {
 
         const updates = { ...req.body };
         delete updates.averageDailySales;
+        delete updates.storeId;
+        delete updates._id;
 
-        const product = await Product.findByIdAndUpdate(
-            id,
+        const product = await Product.findOneAndUpdate(
+            { _id: id, storeId: req.storeId },
             updates,
             {
                 returnDocument: "after",
@@ -137,7 +140,10 @@ const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const product = await Product.findByIdAndDelete(id);
+        const product = await Product.findOneAndDelete({
+            _id: id,
+            storeId: req.storeId
+        });
 
         if (!product) {
             return res.status(404).json({

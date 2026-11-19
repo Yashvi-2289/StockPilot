@@ -13,22 +13,26 @@ function SettingsPage({
 }) {
   const [settingsMessage, setSettingsMessage] = useState("");
   const [settingsError, setSettingsError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   function handleSettingsChange(event) {
     const { name, value } = event.target;
     onSettingsChange(name, value);
   }
 
-  function saveSettings(event) {
+  async function saveSettings(event) {
     event.preventDefault();
+    setSaving(true);
     try {
-      onSave();
+      await onSave();
       setSettingsError("");
       setSettingsMessage("Settings saved successfully!");
     } catch (error) {
       console.error("Settings save error:", error);
       setSettingsError("Could not save settings. Please try again.");
       setSettingsMessage("");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -136,8 +140,8 @@ function SettingsPage({
         </div>
 
         <div className="settings-actions">
-          <button type="submit" className="save-settings-btn">
-            Save Changes
+          <button type="submit" className="save-settings-btn" disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
           </button>
           <button
             type="button"

@@ -782,6 +782,145 @@ td {
   margin-top: auto;
 }
 
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(109, 156, 255, 0.18), transparent 36%),
+    #f5f7fb;
+}
+
+.auth-card {
+  width: min(100%, 460px);
+  padding: 36px;
+  border: 1px solid #e3e9f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(23, 36, 58, 0.1);
+}
+
+.auth-card .brand {
+  margin: 0 0 30px;
+  color: #17243a;
+}
+
+.auth-card > h2 {
+  margin: 10px 0 7px;
+  font-size: 24px;
+}
+
+.auth-description,
+.auth-privacy {
+  color: #68758a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin: 24px 0;
+  padding: 5px;
+  border-radius: 9px;
+  background: #f1f4f9;
+}
+
+.auth-tabs button {
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  background: #fff;
+  color: #2455a4;
+  box-shadow: 0 1px 4px rgba(23, 36, 58, 0.12);
+}
+
+.auth-form,
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form {
+  gap: 16px;
+}
+
+.auth-form label {
+  gap: 7px;
+  color: #596579;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dce2ec;
+  border-radius: 7px;
+  color: #172033;
+}
+
+.auth-form input:focus {
+  outline: 2px solid #c5d7ff;
+  border-color: #315fbd;
+}
+
+.auth-hint {
+  margin-top: -10px;
+  color: #758197;
+}
+
+.auth-submit {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #315fbd;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.auth-privacy {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 12px;
+}
+
+.logout-button {
+  margin-left: auto;
+  padding: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #aab6c8;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #2a3a55;
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 26px 20px;
+  }
+}
+
 .product-card-actions .edit-button,
 .product-card-actions .delete-button,
 .product-card-actions .sale-button {
@@ -848,6 +987,13 @@ td {
   background: #f1f5f9;
   border-color: #e2e8f0;
   cursor: not-allowed;
+}
+
+.product-card-actions .order-button.ordered:disabled {
+  color: #18764a;
+  background: #e7f8ef;
+  border-color: #b7ebcb;
+  cursor: default;
 }
 
 .product-card-header {

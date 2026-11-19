@@ -5,8 +5,10 @@ import {
   ShoppingCart,
   Settings,
   Search,
+  LogOut,
 } from "lucide-react";
 import api from "./services/api";
+import AuthPage from "./pages/AuthPage";
 import OrdersPage from "./pages/OrdersPage";
 import SettingsPage from "./pages/SettingsPage";
 import "./App.css";
@@ -30,25 +32,41 @@ const currencySymbols = {
   EUR: "€",
 };
 
-function readSavedSettings() {
+function readSavedSettings(user) {
   try {
-    const savedSettings = localStorage.getItem("stockpilotSettings");
+    const savedSettings = localStorage.getItem(
+      `stockpilotSettings:${user.id}`
+    );
     if (!savedSettings) {
-      return defaultSettings;
+      return {
+        ...defaultSettings,
+        storeName: user.storeName,
+        adminName: user.adminName,
+        email: user.email,
+      };
     }
 
     const parsedSettings = JSON.parse(savedSettings);
-    delete parsedSettings.lowStockThreshold;
     return {
       ...defaultSettings,
-      ...parsedSettings,
-      currency: currencyFormats[parsedSettings.currency]
+      ...(parsedSettings && typeof parsedSettings === "object"
+        ? parsedSettings
+        : {}),
+      storeName: user.storeName,
+      adminName: user.adminName,
+      email: user.email,
+      currency: currencyFormats[parsedSettings?.currency]
         ? parsedSettings.currency
         : defaultSettings.currency,
     };
   } catch (error) {
     console.error("Could not load saved settings:", error);
-    return defaultSettings;
+    return {
+      ...defaultSettings,
+      storeName: user.storeName,
+      adminName: user.adminName,
+      email: user.email,
+    };
   }
 }
 
@@ -60,6 +78,9 @@ function getCurrentPage() {
 }
 
 function App() {
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authNotice, setAuthNotice] = useState("");
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [saleProduct, setSaleProduct] = useState(null);
   const [saleQuantity, setSaleQuantity] = useState("");
@@ -74,7 +95,8 @@ function App() {
   const [formError, setFormError] = useState("");
   const [currentPage, setCurrentPage] = useState(getCurrentPage);
   const [orderingProductId, setOrderingProductId] = useState(null);
-  const [settings, setSettings] = useState(readSavedSettings);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [settings, setSettings] = useState(defaultSettings);
   const [exchangeRates, setExchangeRates] = useState({ INR: 1 });
   const [exchangeRateDate, setExchangeRateDate] = useState("");
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
@@ -99,30 +121,116 @@ const [editData, setEditData] = useState({
 const [editError, setEditError] = useState("");
 const [updating, setUpdating] = useState(false); 
 
-  async function refreshDashboardData() {
-  try {
-    const productsResponse = await api.get("/products");
-    setProducts(productsResponse.data);
+  useEffect(() => {
+    let active = true;
 
-    const summaryResponse = await api.get("/inventory/summary");
-    setInventorySummary(summaryResponse.data);
-  } catch (error) {
-    console.error("Dashboard refresh error:", error);
-    setError("Unable to refresh dashboard data.");
+    function handleUnauthorized() {
+      setAuthUser(null);
+      setLoading(false);
+      setProducts([]);
+      setInventorySummary([]);
+      setPendingOrders([]);
+      setAuthNotice("Your session has expired. Please sign in again.");
+    }
+
+    window.addEventListener("stockpilot:unauthorized", handleUnauthorized);
+
+    if (!localStorage.getItem("stockpilotToken")) {
+      setAuthLoading(false);
+      return () => {
+        active = false;
+        window.removeEventListener(
+          "stockpilot:unauthorized",
+          handleUnauthorized
+        );
+      };
+    }
+
+    api.get("/auth/me")
+      .then((response) => {
+        if (active) {
+          setAuthUser(response.data.user);
+        }
+      })
+      .catch((sessionError) => {
+        console.error("Session verification error:", sessionError);
+        if (active && sessionError.response?.status !== 401) {
+          setAuthNotice("Could not verify your session. Please sign in.");
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setAuthLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+      window.removeEventListener(
+        "stockpilot:unauthorized",
+        handleUnauthorized
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authUser) {
+      setSettings(readSavedSettings(authUser));
+    }
+  }, [authUser]);
+
+  async function refreshDashboardData(signal) {
+    const token = localStorage.getItem("stockpilotToken");
+    if (!token) {
+      return;
+    }
+
+    const requestOptions = {
+      signal,
+      headers: { Authorization: `Bearer ${token}` },
+    };
+
+    try {
+      const productsResponse = await api.get("/products", requestOptions);
+      const summaryResponse = await api.get(
+        "/inventory/summary",
+        requestOptions
+      );
+      const ordersResponse = await api.get("/orders", requestOptions);
+
+      if (localStorage.getItem("stockpilotToken") !== token) {
+        return;
+      }
+
+      setProducts(productsResponse.data);
+      setInventorySummary(summaryResponse.data);
+      setPendingOrders(ordersResponse.data);
+    } catch (error) {
+      if (error.name !== "CanceledError") {
+        console.error("Dashboard refresh error:", error);
+        setError("Unable to refresh dashboard data.");
+      }
+    }
   }
-}
 
 useEffect(() => {
+  if (!authUser) {
+    setLoading(false);
+    return undefined;
+  }
+
+  const controller = new AbortController();
+
   async function loadDashboard() {
-    try {
-      await refreshDashboardData();
-    } finally {
+    await refreshDashboardData(controller.signal);
+    if (!controller.signal.aborted) {
       setLoading(false);
     }
   }
 
   loadDashboard();
-}, []);
+  return () => controller.abort();
+}, [authUser?.id]);
 
 useEffect(() => {
   function handleHashChange() {
@@ -422,6 +530,14 @@ async function handleDeleteProduct(productId) {
 }
 
 async function handlePlaceOrder(product, quantity) {
+  const existingOrder = pendingOrders.find(
+    (order) =>
+      String(order.productId?._id ?? order.productId) === String(product._id)
+  );
+  if (existingOrder) {
+    return;
+  }
+
   if (!Number.isInteger(quantity) || quantity <= 0) {
     setError("This product does not have a valid suggested order quantity.");
     return;
@@ -435,10 +551,14 @@ async function handlePlaceOrder(product, quantity) {
   setError("");
 
   try {
-    await api.post("/orders", {
+    const response = await api.post("/orders", {
       productId: product._id,
       quantity,
     });
+    if (response.data.order) {
+      setPendingOrders((orders) => [response.data.order, ...orders]);
+    }
+    await refreshDashboardData();
     window.alert("Order placed successfully. View it on the Orders page.");
   } catch (orderError) {
     console.error("Place order error:", orderError);
@@ -458,13 +578,82 @@ function handleSettingsChange(name, value) {
   }));
 }
 
-function saveSettings() {
-  localStorage.setItem("stockpilotSettings", JSON.stringify(settings));
+async function saveSettings() {
+  const response = await api.put("/auth/profile", {
+    storeName: settings.storeName,
+    adminName: settings.adminName,
+    email: settings.email,
+  });
+  const updatedUser = response.data.user;
+  setAuthUser(updatedUser);
+  setSettings((currentSettings) => ({
+    ...currentSettings,
+    storeName: updatedUser.storeName,
+    adminName: updatedUser.adminName,
+    email: updatedUser.email,
+  }));
+  localStorage.setItem(
+    `stockpilotSettings:${updatedUser.id}`,
+    JSON.stringify({
+      ...settings,
+      storeName: updatedUser.storeName,
+      adminName: updatedUser.adminName,
+      email: updatedUser.email,
+    })
+  );
 }
 
 function resetSettings() {
-  localStorage.setItem("stockpilotSettings", JSON.stringify(defaultSettings));
-  setSettings(defaultSettings);
+  const reset = {
+    ...defaultSettings,
+    storeName: authUser.storeName,
+    adminName: authUser.adminName,
+    email: authUser.email,
+  };
+  localStorage.setItem(
+    `stockpilotSettings:${authUser.id}`,
+    JSON.stringify(reset)
+  );
+  setSettings(reset);
+}
+
+async function handleLogout() {
+  try {
+    await api.post("/auth/logout");
+  } catch (logoutError) {
+    console.error("Sign out error:", logoutError);
+  } finally {
+    localStorage.removeItem("stockpilotToken");
+    setAuthUser(null);
+    setProducts([]);
+    setInventorySummary([]);
+    setPendingOrders([]);
+    setLoading(false);
+  }
+}
+
+function handleAuthenticated(user) {
+  setAuthNotice("");
+  setError("");
+  setAuthUser(user);
+  setLoading(true);
+}
+
+if (authLoading) {
+  return (
+    <main className="auth-page">
+      <p className="empty-state">Loading your store...</p>
+    </main>
+  );
+}
+
+if (!authUser) {
+  return (
+    <AuthPage
+      onAuthenticated={handleAuthenticated}
+      notice={authNotice}
+    />
+  );
 }
 
   return (
@@ -508,6 +697,15 @@ function resetSettings() {
             <strong>{settings.adminName}</strong>
             <small>{settings.storeName}</small>
           </div>
+          <button
+            type="button"
+            className="logout-button"
+            onClick={handleLogout}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </aside>
 
@@ -812,6 +1010,16 @@ function resetSettings() {
     );
     const suggestedOrder = Math.ceil(insight?.suggestedOrder ?? 0);
     const isLowStock = Boolean(insight?.lowStock);
+    const orderedQuantity = pendingOrders.reduce((quantity, order) => {
+      const orderProductId =
+        typeof order.productId === "object"
+          ? order.productId?._id
+          : order.productId;
+      return String(orderProductId) === String(product._id)
+        ? quantity + order.quantity
+        : quantity;
+    }, 0);
+    const hasPendingOrder = orderedQuantity > 0;
 
     return (
       <div className="product-card" key={product._id}>
@@ -882,14 +1090,17 @@ function resetSettings() {
 
           <button
             type="button"
-            className="order-button"
+            className={`order-button ${hasPendingOrder ? "ordered" : ""}`}
             disabled={
+              hasPendingOrder ||
               orderingProductId === product._id ||
               suggestedOrder <= 0
             }
             onClick={() => handlePlaceOrder(product, suggestedOrder)}
           >
-            {orderingProductId === product._id
+            {hasPendingOrder
+              ? `Ordered · ${orderedQuantity} units`
+              : orderingProductId === product._id
               ? "Placing Order..."
               : suggestedOrder > 0
                 ? `Order ${suggestedOrder}`
