@@ -132,15 +132,21 @@ Store account passwords are stored as salted password hashes. Sign-in sessions e
 
 The frontend communicates with the backend through Axios.
 
-For local development, configure the API base URL as:
+For local development, the frontend uses `http://localhost:5000/api` by default. Start the backend and frontend in separate terminals:
 
-```javascript
-http://localhost:5000/api
+```bash
+cd backend
+npm start
 ```
 
-For production, use your deployed backend URL:
+```bash
+cd frontend
+npm run dev
+```
 
-```javascript
+The backend needs a valid `MONGO_URI` in `backend/.env`. To override the frontend API URL, set `VITE_API_BASE_URL`. In production, the default is the deployed backend URL:
+
+```text
 https://stockpilot-backend-l6ns.onrender.com/api
 ```
 

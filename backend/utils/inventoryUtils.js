@@ -22,8 +22,11 @@ function calculateSuggestedOrder(
     leadTimeDays,
     safetyStock
 ) {
-    const targetStock =
-        averageDailySales * (leadTimeDays + 30) + safetyStock;
+    const targetStock = calculateReorderPoint(
+        averageDailySales,
+        leadTimeDays,
+        safetyStock
+    );
 
     return Math.ceil(Math.max(0, targetStock - stock));
 }
