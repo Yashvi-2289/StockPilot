@@ -160,10 +160,10 @@ function AuthPage({ onAuthenticated, onClearNotice, notice }) {
           </button>
         </form>
 
-        <p className="auth-privacy">
+         {/* <p className="auth-privacy">
           The first store account keeps the existing inventory. Every other
           store starts with its own empty products, orders, and sales.
-        </p>
+        </p>  */}
       </section>
     </main>
   );
