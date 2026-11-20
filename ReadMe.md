@@ -18,7 +18,6 @@ A web-based inventory management application designed to help businesses manage 
 - **Sales Management:** Record product sales, automatically update stock, and track average daily sales from recorded sale history.
 - **Orders Management:** Manage inventory-related orders.
 - **Store Accounts:** Create an account for each store and sign in from any device. Products, sales, and orders are kept separate for each store.
-- **Password Recovery:** Request a single-use password reset link by email if you forget your password.
 - **Settings:** Access application settings.
 - **Responsive Design:** Use the application across desktop and mobile devices.
 
@@ -95,13 +94,6 @@ Create a `.env` file inside the backend folder:
 ```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
-FRONTEND_URL=http://localhost:5173
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your_smtp_username
-SMTP_PASSWORD=your_smtp_password
-MAIL_FROM=StockPilot <no-reply@example.com>
 ```
 
 Start the backend server:
@@ -137,8 +129,6 @@ New store accounts start with an empty inventory. The first account created afte
 Store account passwords are stored as salted password hashes. Sign-in sessions expire after seven days and are stored as hashes in MongoDB.
 
 To change a password, sign in, open **Settings**, and submit the current password and a new password of 8 to 128 characters. Changing the password signs out other devices; the device used to change it stays signed in.
-
-To recover a forgotten password, select **Forgot password?** on the sign-in form and enter the account email. The link sent to that email expires after one hour and can only be used once. Resetting the password signs out all devices. Configure `FRONTEND_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM` in the backend environment before enabling this feature. Use your deployed frontend URL for `FRONTEND_URL` in production.
 
 ## 🔗 API Configuration
 

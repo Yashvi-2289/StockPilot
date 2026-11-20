@@ -4,8 +4,6 @@ const {
     createSessionToken,
     hashPassword,
     hashSessionToken,
-    createPasswordResetToken,
-    hashPasswordResetToken,
     verifyPassword
 } = require("./authUtils");
 
@@ -23,14 +21,4 @@ test("session tokens are random and stored as one-way hashes", () => {
     assert.notEqual(firstToken, secondToken);
     assert.equal(hashSessionToken(firstToken), hashSessionToken(firstToken));
     assert.notEqual(hashSessionToken(firstToken), firstToken);
-});
-
-test("password reset tokens are random and stored as one-way hashes", () => {
-    const firstToken = createPasswordResetToken();
-    const secondToken = createPasswordResetToken();
-
-    assert.notEqual(firstToken, secondToken);
-    assert.equal(firstToken.length, 64);
-    assert.equal(hashPasswordResetToken(firstToken), hashPasswordResetToken(firstToken));
-    assert.notEqual(hashPasswordResetToken(firstToken), firstToken);
 });
