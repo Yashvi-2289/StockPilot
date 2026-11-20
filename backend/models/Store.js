@@ -26,6 +26,14 @@ const storeSchema = new mongoose.Schema(
             type: String,
             required: true,
             select: false
+        },
+        passwordResetTokenHash: {
+            type: String,
+            select: false
+        },
+        passwordResetExpiresAt: {
+            type: Date,
+            select: false
         }
     },
     { timestamps: true }

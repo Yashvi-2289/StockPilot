@@ -35,9 +35,19 @@ function hashSessionToken(token) {
     return createHash("sha256").update(token).digest("hex");
 }
 
+function createPasswordResetToken() {
+    return randomBytes(32).toString("hex");
+}
+
+function hashPasswordResetToken(token) {
+    return createHash("sha256").update(token).digest("hex");
+}
+
 module.exports = {
     hashPassword,
     verifyPassword,
     createSessionToken,
-    hashSessionToken
+    hashSessionToken,
+    createPasswordResetToken,
+    hashPasswordResetToken
 };
