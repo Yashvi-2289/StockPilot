@@ -135,6 +135,18 @@ const [updating, setUpdating] = useState(false);
 
     window.addEventListener("stockpilot:unauthorized", handleUnauthorized);
 
+    if (new URLSearchParams(window.location.search).get("resetToken")) {
+      localStorage.removeItem("stockpilotToken");
+      setAuthLoading(false);
+      return () => {
+        active = false;
+        window.removeEventListener(
+          "stockpilot:unauthorized",
+          handleUnauthorized
+        );
+      };
+    }
+
     if (!localStorage.getItem("stockpilotToken")) {
       setAuthLoading(false);
       return () => {

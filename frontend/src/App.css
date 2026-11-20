@@ -901,6 +901,28 @@ td {
   color: #758197;
 }
 
+.auth-success {
+  margin: 0;
+  color: #18764a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-link {
+  align-self: center;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: #315fbd;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
 .auth-error-details {
   margin-top: -8px;
   color: #64748b;
