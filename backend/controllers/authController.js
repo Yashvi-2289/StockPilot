@@ -7,18 +7,11 @@ const Store = require("../models/Store");
 const {
     createSessionToken,
     hashPassword,
-    createPasswordResetToken,
-    hashPasswordResetToken,
     hashSessionToken,
     verifyPassword
 } = require("../utils/authUtils");
-const {
-    isPasswordResetConfigured,
-    sendPasswordResetEmail
-} = require("../utils/passwordResetEmail");
 
 const sessionLifetimeMs = 7 * 24 * 60 * 60 * 1000;
-const passwordResetLifetimeMs = 60 * 60 * 1000;
 
 function publicStore(store) {
     return {
@@ -160,128 +153,6 @@ const login = async (req, res) => {
     }
 };
 
-const requestPasswordReset = async (req, res) => {
-    const email = typeof req.body?.email === "string"
-        ? req.body.email.trim().toLowerCase()
-        : "";
-
-    if (
-        !email ||
-        email.length > 254 ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
-        return res.status(400).json({ message: "Enter a valid email address." });
-    }
-
-    if (!isPasswordResetConfigured()) {
-        return res.status(503).json({
-            message: "Password reset is temporarily unavailable. Please try again later."
-        });
-    }
-
-    try {
-        const store = await Store.findOne({ email });
-        if (store) {
-            const token = createPasswordResetToken();
-            const tokenHash = hashPasswordResetToken(token);
-            await Store.updateOne(
-                { _id: store._id },
-                {
-                    $set: {
-                        passwordResetTokenHash: tokenHash,
-                        passwordResetExpiresAt: new Date(Date.now() + passwordResetLifetimeMs)
-                    }
-                }
-            );
-
-            try {
-                await sendPasswordResetEmail(email, token);
-            } catch (error) {
-                await Store.updateOne(
-                    { _id: store._id, passwordResetTokenHash: tokenHash },
-                    {
-                        $unset: {
-                            passwordResetTokenHash: "",
-                            passwordResetExpiresAt: ""
-                        }
-                    }
-                );
-                throw error;
-            }
-        }
-
-        res.status(200).json({
-            message: "If an account exists for that email, a password reset link has been sent."
-        });
-    } catch (error) {
-        console.error("Password reset request failed:", error);
-        res.status(500).json({
-            message: "Could not send a password reset email. Please try again later."
-        });
-    }
-};
-
-const resetPassword = async (req, res) => {
-    const { token, newPassword } = req.body || {};
-    if (
-        typeof token !== "string" ||
-        !/^[a-f0-9]{64}$/i.test(token) ||
-        typeof newPassword !== "string" ||
-        newPassword.length < 8 ||
-        newPassword.length > 128
-    ) {
-        return res.status(400).json({
-            message: "Enter a valid reset link and a new password of 8 to 128 characters."
-        });
-    }
-
-    let session;
-    try {
-        const passwordHash = await hashPassword(newPassword);
-        session = await mongoose.startSession();
-        let resetComplete = false;
-
-        await session.withTransaction(async () => {
-            const store = await Store.findOneAndUpdate(
-                {
-                    passwordResetTokenHash: hashPasswordResetToken(token),
-                    passwordResetExpiresAt: { $gt: new Date() }
-                },
-                {
-                    $set: { passwordHash },
-                    $unset: {
-                        passwordResetTokenHash: "",
-                        passwordResetExpiresAt: ""
-                    }
-                },
-                { session, returnDocument: "after" }
-            );
-
-            if (store) {
-                await Session.deleteMany({ storeId: store._id }, { session });
-                resetComplete = true;
-            }
-        });
-
-        if (!resetComplete) {
-            return res.status(400).json({
-                message: "This password reset link is invalid or has expired. Request a new one."
-            });
-        }
-
-        res.status(200).json({
-            message: "Password reset successfully. Please sign in with your new password."
-        });
-    } catch (error) {
-        console.error("Password reset failed:", error);
-        res.status(500).json({ message: "Could not reset your password. Please try again." });
-    } finally {
-        if (session) {
-            await session.endSession();
-        }
-    }
-};
-
 const getCurrentStore = (req, res) => {
     res.status(200).json({ user: publicStore(req.store) });
 };
@@ -383,8 +254,6 @@ const logout = async (req, res) => {
 module.exports = {
     register,
     login,
-    requestPasswordReset,
-    resetPassword,
     getCurrentStore,
     updateProfile,
     changePassword,
